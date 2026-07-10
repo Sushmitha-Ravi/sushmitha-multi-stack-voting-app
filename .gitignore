@@ -9,3 +9,6 @@ crash.*.log
 
 # Terraform variable values
 terraform/terraform.tfvars
+
+# Local presentation screenshots
+presentation-screenshots/
