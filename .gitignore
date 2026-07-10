@@ -6,3 +6,6 @@
 *.tfstate.*
 crash.log
 crash.*.log
+
+# Terraform variable values
+terraform/terraform.tfvars
