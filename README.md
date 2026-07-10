@@ -1,155 +1,189 @@
-<!-- © 2024 | Ironhack -->
+# Multi-Stack Voting Application - DevOps Infrastructure Project
+
+## Project Overview
+
+This project is a multi-stack microservices voting application deployed using Docker, DockerHub, Terraform, AWS, and Ansible.
+
+The goal was to take a microservices application, test it locally, build custom Docker images, provision AWS infrastructure with Terraform, and deploy the containers to EC2 instances using Ansible.
+
+DevOps work completed by: Sushmitha Ravi
 
 ---
 
-# Multi-Stack Voting Application
+## Application Services
 
-**Welcome to your DevOps practice project!** This repository hosts a multi-stack voting application composed of several services, each implemented in a different language and technology stack. The goal is to help you gain experience with containerization, orchestration, and running a distributed set of services—both individually and as part of a unified system.
+| Service | Technology | Purpose |
+|---|---|---|
+| Vote | Python / Flask | Web page where users submit votes |
+| Redis | Redis | Temporary queue for votes |
+| Worker | .NET | Moves votes from Redis to Postgres |
+| Postgres | PostgreSQL | Stores votes permanently |
+| Result | Node.js / Express | Shows voting results |
 
-This application, while simple, uses multiple components commonly found in modern distributed architectures, giving you hands-on practice in connecting services, handling containers, and working with basic infrastructure automation.
+Application flow:
 
-## Application Overview
-
-The voting application includes:
-
-- **Vote (Python)**: A Python Flask-based web application where users can vote between two options.
-- **Redis (in-memory queue)**: Collects incoming votes and temporarily stores them.
-- **Worker (.NET)**: A .NET 7.0-based service that consumes votes from Redis and persists them into a database.
-- **Postgres (Database)**: Stores votes for long-term persistence.
-- **Result (Node.js)**: A Node.js/Express web application that displays the vote counts in real time.
-
-### Why This Setup?
-
-The goal is to introduce you to a variety of languages, tools, and frameworks in one place. This is **not** a perfect production design. Instead, it’s intentionally diverse to help you:
-
-- Work with multiple runtimes and languages (Python, Node.js, .NET).
-- Interact with services like Redis and Postgres.
-- Containerize applications using Docker.
-- Use Docker Compose to orchestrate and manage multiple services together.
-
-By dealing with this “messy” environment, you’ll build real-world problem-solving skills. After this project, you should feel more confident tackling more complex deployments and troubleshooting issues in containerized, multi-service setups.
+Vote → Redis → Worker → Postgres → Result
 
 ---
 
-## How to Run Each Component
+## Tools Used
 
-### Running the Vote Service (Python) Locally (No Docker)
-
-1. Ensure you have Python 3.10+ installed.
-2. Navigate to the `vote` directory:
-   ```bash
-   cd vote
-   pip install -r requirements.txt
-   python app.py
-   ```
-   Access the vote interface at [http://localhost:5000](http://localhost:5000).
-
-### Running Redis Locally (No Docker)
-
-1. Install Redis on your system ([https://redis.io/docs/getting-started/](https://redis.io/docs/getting-started/)).
-2. Start Redis:
-   ```bash
-   redis-server
-   ```
-   Redis will be available at `localhost:6379`.
-
-### Running the Worker (C#/.NET) Locally (No Docker)
-
-1. Ensure .NET 7.0 SDK is installed.
-2. Navigate to `worker`:
-   ```bash
-   cd worker
-   dotnet restore
-   dotnet run
-   ```
-   The worker will attempt to connect to Redis and Postgres when available.
-
-### Running Postgres Locally (No Docker)
-
-1. Install Postgres from [https://www.postgresql.org/download/](https://www.postgresql.org/download/).
-2. Start Postgres, note the username and password (default `postgres`/`postgres`):
-   ```bash
-   # On many systems, Postgres runs as a service once installed.
-   ```
-   Postgres will be available at `localhost:5432`.
-
-### Running the Result Service (Node.js) Locally (No Docker)
-
-1. Ensure Node.js 18+ is installed.
-2. Navigate to `result`:
-   ```bash
-   cd result
-   npm install
-   node server.js
-   ```
-   Access the results interface at [http://localhost:4000](http://localhost:4000).
-
-**Note:** To get the entire system working end-to-end (i.e., votes flowing through Redis, processed by the worker, stored in Postgres, and displayed by the result app), you’ll need to ensure each component is running and that connection strings or environment variables point to the correct services.
+| Area | Tools |
+|---|---|
+| Version control | Git, GitHub |
+| Containers | Docker, Docker Compose |
+| Registry | DockerHub |
+| Infrastructure as Code | Terraform |
+| Cloud provider | AWS |
+| Configuration management | Ansible |
+| AWS services | VPC, EC2, public/private subnets, Internet Gateway, NAT Gateway, Security Groups, S3, DynamoDB |
 
 ---
 
-## Running the Entire Stack in Docker
+## Docker and DockerHub
 
-### Building and Running Individual Services
+I built and pushed my own Docker images for the main application services:
 
-You can build each service with Docker and run them individually:
+- rsushmitha/sushmitha-voting-vote:latest
+- rsushmitha/sushmitha-voting-result:latest
+- rsushmitha/sushmitha-voting-worker:latest
 
-- **Vote (Python)**:
-  ```bash
-  docker build -t myorg/vote:latest ./vote
-  docker run --name vote -p 8080:80 myorg/vote:latest
-  ```
-  Visit [http://localhost:8080](http://localhost:8080).
+The images were built for both linux/amd64 and linux/arm64.
 
-- **Redis** (official image, no build needed):
-  ```bash
-  docker run --name redis -p 6379:6379 redis:alpine
-  ```
-
-- **Worker (.NET)**:
-  ```bash
-  docker build -t myorg/worker:latest ./worker
-  docker run --name worker myorg/worker:latest
-  ```
-  
-- **Postgres**:
-  ```bash
-  docker run --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15-alpine
-  ```
-
-- **Result (Node.js)**:
-  ```bash
-  docker build -t myorg/result:latest ./result
-  docker run --name result -p 8081:80 myorg/result:latest
-  ```
-  Visit [http://localhost:8081](http://localhost:8081).
-
-### Using Docker Compose
-
-The easiest way to run the entire stack is via Docker Compose. From the project root directory:
-
-```bash
-docker compose up
-```
-
-This will:
-
-- Build and run the vote, worker, and result services.
-- Run Redis and Postgres from their official images.
-- Set up networks, volumes, and environment variables so all services can communicate.
-
-Visit [http://localhost:8080](http://localhost:8080) to vote and [http://localhost:8081](http://localhost:8081) to see results.
+This is important because my Mac uses ARM architecture, while AWS EC2 may use AMD64. Docker can pull the correct image for the target machine.
 
 ---
 
-## Notes on Platforms (arm64 vs amd64)
+## Local Docker Compose Test
 
-If you’re on an arm64 machine (e.g., Apple Silicon M1/M2) and encounter issues with images or dependencies that assume amd64, you can use Docker `buildx`:
+Before deploying to AWS, I tested the full application locally using Docker Compose.
 
-```bash
-docker buildx build --platform linux/amd64 -t myorg/worker:latest ./worker
-```
+Local URLs:
 
-This ensures the image is built for the desired platform.
+- Vote page: http://localhost:8080
+- Result page: http://localhost:8081
+
+This confirmed that the services worked together before cloud deployment.
 
 ---
+
+## AWS Infrastructure with Terraform
+
+Terraform was used to create the AWS infrastructure.
+
+Main resources created:
+
+- VPC
+- Public subnet
+- Private subnet
+- Internet Gateway
+- NAT Gateway
+- Route tables
+- Security groups
+- Frontend EC2 instance
+- Backend EC2 instance
+- Database EC2 instance
+- S3 backend for Terraform state
+- DynamoDB table for locking/support
+
+Architecture:
+
+Internet  
+↓  
+Frontend EC2 in public subnet  
+Runs: vote + result  
+Also used as bastion host  
+↓  
+Backend EC2 in private subnet  
+Runs: redis + worker  
+↓  
+Database EC2 in private subnet  
+Runs: postgres
+
+---
+
+## Security Design
+
+The frontend EC2 instance is public because users need to access the vote and result pages.
+
+The backend and database EC2 instances are private because Redis, Worker, and Postgres should not be directly exposed to the internet.
+
+Private instances are accessed through the frontend instance as a bastion/jump host.
+
+---
+
+## Ansible Deployment
+
+Ansible was used to configure the EC2 instances and deploy the containers.
+
+Container placement:
+
+| EC2 Instance | Containers |
+|---|---|
+| Frontend | vote, result |
+| Backend | redis, worker |
+| Database | postgres |
+
+Ansible completed:
+
+- Connected to frontend directly
+- Connected to backend and database through bastion
+- Installed Docker on all EC2 instances
+- Pulled Docker images
+- Started containers
+- Verified containers with docker ps
+
+---
+
+## Add-ons Completed
+
+The following safe add-ons were completed:
+
+- Terraform remote state using S3
+- DynamoDB table for locking/support
+- PostgreSQL Docker volume
+- Security group separation
+
+Larger add-ons like Load Balancer and Monitoring were left as future improvements to keep the demo stable.
+
+---
+
+## What I Learned
+
+Through this project, I learned:
+
+- How microservices communicate
+- How Docker images and containers work
+- How Docker Compose runs services locally
+- How to push multi-architecture images to DockerHub
+- How Terraform creates AWS infrastructure
+- Why public and private subnets are used
+- Why NAT Gateway is needed
+- How a bastion host works
+- How Ansible automates deployment
+- How to test and debug containers on EC2
+
+---
+
+## Future Improvements
+
+Possible future improvements:
+
+- Use AWS RDS instead of running Postgres in a container
+- Use ElastiCache instead of running Redis in a container
+- Use AWS ECR instead of DockerHub
+- Add an Application Load Balancer
+- Add CloudWatch monitoring and alarms
+- Use AWS Secrets Manager or SSM Parameter Store for passwords
+- Add a CI/CD pipeline
+
+---
+
+## Cleanup
+
+To avoid AWS costs after the demo:
+
+cd terraform
+terraform destroy
+
+Do not run terraform destroy before the final presentation or live demo.
