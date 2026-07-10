@@ -1,0 +1,89 @@
+---
+- name: Deploy PostgreSQL on database instance
+  hosts: database
+  become: true
+
+  tasks:
+    - name: Remove old PostgreSQL container if it exists
+      ansible.builtin.shell: docker rm -f postgres || true
+
+    - name: Create PostgreSQL Docker volume
+      ansible.builtin.shell: docker volume create pgdata
+
+    - name: Run PostgreSQL container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name postgres \
+          --restart unless-stopped \
+          -e POSTGRES_USER=postgres \
+          -e POSTGRES_PASSWORD=postgres \
+          -e POSTGRES_DB=postgres \
+          -p 5432:5432 \
+          -v pgdata:/var/lib/postgresql/data \
+          postgres:15-alpine
+
+
+- name: Deploy Redis and Worker on backend instance
+  hosts: backend
+  become: true
+
+  tasks:
+    - name: Remove old Redis and Worker containers if they exist
+      ansible.builtin.shell: docker rm -f redis worker || true
+
+    - name: Create backend Docker network
+      ansible.builtin.shell: docker network create voting-net || true
+
+    - name: Run Redis container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name redis \
+          --restart unless-stopped \
+          --network voting-net \
+          -p 6379:6379 \
+          redis:alpine
+
+    - name: Run Worker container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name worker \
+          --restart unless-stopped \
+          --network voting-net \
+          -e REDIS_HOST=redis \
+          -e DB_HOST=10.20.2.64 \
+          -e DB_USERNAME=postgres \
+          -e DB_PASSWORD=postgres \
+          -e DB_NAME=postgres \
+          rsushmitha/sushmitha-voting-worker:latest
+
+
+- name: Deploy Vote and Result on frontend instance
+  hosts: frontend
+  become: true
+
+  tasks:
+    - name: Remove old Vote and Result containers if they exist
+      ansible.builtin.shell: docker rm -f vote result || true
+
+    - name: Run Vote container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name vote \
+          --restart unless-stopped \
+          -p 8080:80 \
+          -e REDIS_HOST=10.20.2.91 \
+          -e REDIS_PORT=6379 \
+          rsushmitha/sushmitha-voting-vote:latest
+
+    - name: Run Result container
+      ansible.builtin.shell: |
+        docker run -d \
+          --name result \
+          --restart unless-stopped \
+          -p 8081:80 \
+          -e PG_HOST=10.20.2.64 \
+          -e PG_PORT=5432 \
+          -e PG_USER=postgres \
+          -e PG_PASSWORD=postgres \
+          -e PG_DATABASE=postgres \
+          rsushmitha/sushmitha-voting-result:latest
