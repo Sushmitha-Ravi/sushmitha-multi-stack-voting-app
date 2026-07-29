@@ -12,3 +12,4 @@ terraform/terraform.tfvars
 
 # Local presentation screenshots
 presentation-screenshots/
+.DS_Store
