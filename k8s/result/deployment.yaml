@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: result
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: result
+
+  template:
+    metadata:
+      labels:
+        app: result
+
+    spec:
+      containers:
+        - name: result
+          image: rsushmitha/sushmitha-voting-result:latest
+
+          ports:
+            - containerPort: 80
+
+          env:
+            - name: POSTGRES_HOST
+              value: "db"
+
+            - name: POSTGRES_USER
+              value: "postgres"
+
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+              
