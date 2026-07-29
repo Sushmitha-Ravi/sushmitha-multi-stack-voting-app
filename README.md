@@ -1,189 +1,211 @@
-# Multi-Stack Voting Application - DevOps Infrastructure Project
+# ☁️ Cloud-Native Multi-Stack Voting Application
 
-## Project Overview
+> **End-to-End DevOps Project on AWS**
+>
+> A production-style portfolio project demonstrating the evolution of a microservices application from local development to cloud-native deployment using Docker, Terraform, Ansible, Kubernetes, and Amazon EKS.
 
-This project is a multi-stack microservices voting application deployed using Docker, DockerHub, Terraform, AWS, and Ansible.
-
-The goal was to take a microservices application, test it locally, build custom Docker images, provision AWS infrastructure with Terraform, and deploy the containers to EC2 instances using Ansible.
-
-DevOps work completed by: Sushmitha Ravi
-
----
-
-## Application Services
-
-| Service | Technology | Purpose |
-|---|---|---|
-| Vote | Python / Flask | Web page where users submit votes |
-| Redis | Redis | Temporary queue for votes |
-| Worker | .NET | Moves votes from Redis to Postgres |
-| Postgres | PostgreSQL | Stores votes permanently |
-| Result | Node.js / Express | Shows voting results |
-
-Application flow:
-
-Vote → Redis → Worker → Postgres → Result
+![AWS](https://img.shields.io/badge/AWS-Cloud-orange?logo=amazonaws&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?logo=docker&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)
+![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000?logo=ansible&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326CE5?logo=kubernetes&logoColor=white)
+![Amazon EKS](https://img.shields.io/badge/Amazon-EKS-FF9900?logo=amazonaws&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
-## Tools Used
+# 📑 Table of Contents
+1. Project Overview
+2. Project Objectives
+3. Project Evolution
+4. Architecture
+5. Application Workflow
+6. Technology Stack
+7. Repository Structure
+8. Phase 1 – Docker
+9. Phase 2 – Docker Compose
+10. Phase 3 – Terraform
+11. Phase 4 – AWS Infrastructure
+12. Phase 5 – Ansible
+13. Phase 6 – Amazon EKS
+14. Phase 7 – Kubernetes
+15. Challenges & Solutions
+16. Screenshots
+17. Skills Demonstrated
+18. Future Roadmap
+19. Cleanup
+20. Author
 
-| Area | Tools |
+# 📖 Project Overview
+
+This repository documents the complete evolution of the same Multi‑Stack Voting Application through multiple stages of the DevOps lifecycle. Rather than stopping after a single deployment method, the application was progressively improved using industry-standard tools and practices.
+
+# 🎯 Objectives
+
+- Containerize a multi-service application
+- Test locally using Docker Compose
+- Provision AWS infrastructure using Terraform
+- Automate deployment with Ansible
+- Deploy the application to Amazon EKS using Kubernetes
+- Document the complete DevOps journey
+
+# 📈 Project Evolution
+
+```text
+Python
+   ↓
+Docker
+   ↓
+Docker Compose
+   ↓
+Terraform
+   ↓
+AWS Infrastructure
+   ↓
+Ansible
+   ↓
+Amazon EKS
+   ↓
+Kubernetes
+```
+
+# 🏗️ Architecture (Mermaid)
+
+```mermaid
+flowchart LR
+Developer-->Docker
+Docker-->DockerHub
+DockerHub-->Terraform
+Terraform-->AWS
+AWS-->Ansible
+Ansible-->EKS
+EKS-->Kubernetes
+```
+
+# 🔄 Application Workflow
+
+```text
+Vote → Redis → Worker → PostgreSQL → Result
+```
+
+# 🛠️ Technology Stack
+
+| Category | Technologies |
 |---|---|
-| Version control | Git, GitHub |
+| Programming | Python, .NET, Node.js |
 | Containers | Docker, Docker Compose |
-| Registry | DockerHub |
-| Infrastructure as Code | Terraform |
-| Cloud provider | AWS |
-| Configuration management | Ansible |
-| AWS services | VPC, EC2, public/private subnets, Internet Gateway, NAT Gateway, Security Groups, S3, DynamoDB |
+| IaC | Terraform |
+| Cloud | AWS |
+| Configuration | Ansible |
+| Orchestration | Kubernetes, Amazon EKS |
+| SCM | Git & GitHub |
 
----
+# 📂 Repository Structure
 
-## Docker and DockerHub
+```text
+terraform/
+ansible/
+k8s/
+vote/
+worker/
+result/
+screenshots/
+README.md
+```
 
-I built and pushed my own Docker images for the main application services:
+# 🚀 Phase 1 – Docker
+- Built custom images
+- Multi-architecture builds
+- Published to Docker Hub
 
-- rsushmitha/sushmitha-voting-vote:latest
-- rsushmitha/sushmitha-voting-result:latest
-- rsushmitha/sushmitha-voting-worker:latest
+# 🚀 Phase 2 – Docker Compose
+- Local multi-container testing
+- Service communication verification
 
-The images were built for both linux/amd64 and linux/arm64.
-
-This is important because my Mac uses ARM architecture, while AWS EC2 may use AMD64. Docker can pull the correct image for the target machine.
-
----
-
-## Local Docker Compose Test
-
-Before deploying to AWS, I tested the full application locally using Docker Compose.
-
-Local URLs:
-
-- Vote page: http://localhost:8080
-- Result page: http://localhost:8081
-
-This confirmed that the services worked together before cloud deployment.
-
----
-
-## AWS Infrastructure with Terraform
-
-Terraform was used to create the AWS infrastructure.
-
-Main resources created:
-
+# 🚀 Phase 3 – Terraform
 - VPC
-- Public subnet
-- Private subnet
+- Public & Private Subnets
 - Internet Gateway
 - NAT Gateway
-- Route tables
-- Security groups
-- Frontend EC2 instance
-- Backend EC2 instance
-- Database EC2 instance
-- S3 backend for Terraform state
-- DynamoDB table for locking/support
+- Security Groups
+- EC2
+- S3 Backend
+- DynamoDB Lock Table
 
-Architecture:
+# 🚀 Phase 4 – AWS Infrastructure
+Infrastructure deployed on AWS with isolated networking and bastion access.
 
-Internet  
-↓  
-Frontend EC2 in public subnet  
-Runs: vote + result  
-Also used as bastion host  
-↓  
-Backend EC2 in private subnet  
-Runs: redis + worker  
-↓  
-Database EC2 in private subnet  
-Runs: postgres
+# 🚀 Phase 5 – Ansible
+- Docker installation
+- Image deployment
+- Container startup
+- Verification
 
----
+# 🚀 Phase 6 – Amazon EKS
+- Cluster creation
+- Worker nodes
+- kubectl configuration
 
-## Security Design
+# 🚀 Phase 7 – Kubernetes
+- Deployments
+- Services
+- Application verification
+- External access to Vote and Result
 
-The frontend EC2 instance is public because users need to access the vote and result pages.
+# 🐞 Challenges & Solutions
 
-The backend and database EC2 instances are private because Redis, Worker, and Postgres should not be directly exposed to the internet.
+## Redis environment variable conflict
+**Problem:** Kubernetes injected environment variables that conflicted with the application.
 
-Private instances are accessed through the frontend instance as a bastion/jump host.
+**Solution:** Explicitly configured Redis host and port, then redeployed and verified the pods.
 
----
+# 📸 Screenshots
 
-## Ansible Deployment
+Add screenshots for:
+- Docker Compose
+- Terraform Apply
+- EC2
+- Ansible Playbook
+- EKS Cluster
+- kubectl get pods
+- kubectl get services
+- Vote App
+- Result App
 
-Ansible was used to configure the EC2 instances and deploy the containers.
+# 🎓 Skills Demonstrated
 
-Container placement:
+- Docker
+- Docker Compose
+- Terraform
+- AWS Networking
+- EC2
+- Ansible
+- Kubernetes
+- Amazon EKS
+- Git
+- Troubleshooting
 
-| EC2 Instance | Containers |
-|---|---|
-| Frontend | vote, result |
-| Backend | redis, worker |
-| Database | postgres |
+# 🗺️ Future Roadmap
 
-Ansible completed:
+- GitHub Actions CI/CD
+- NGINX Ingress
+- Kubernetes Secrets
+- HTTPS (cert-manager)
+- Amazon ECR
+- Amazon RDS
+- Amazon ElastiCache
+- Prometheus & Grafana
+- Horizontal Pod Autoscaler
 
-- Connected to frontend directly
-- Connected to backend and database through bastion
-- Installed Docker on all EC2 instances
-- Pulled Docker images
-- Started containers
-- Verified containers with docker ps
+# 🧹 Cleanup
 
----
-
-## Add-ons Completed
-
-The following safe add-ons were completed:
-
-- Terraform remote state using S3
-- DynamoDB table for locking/support
-- PostgreSQL Docker volume
-- Security group separation
-
-Larger add-ons like Load Balancer and Monitoring were left as future improvements to keep the demo stable.
-
----
-
-## What I Learned
-
-Through this project, I learned:
-
-- How microservices communicate
-- How Docker images and containers work
-- How Docker Compose runs services locally
-- How to push multi-architecture images to DockerHub
-- How Terraform creates AWS infrastructure
-- Why public and private subnets are used
-- Why NAT Gateway is needed
-- How a bastion host works
-- How Ansible automates deployment
-- How to test and debug containers on EC2
-
----
-
-## Future Improvements
-
-Possible future improvements:
-
-- Use AWS RDS instead of running Postgres in a container
-- Use ElastiCache instead of running Redis in a container
-- Use AWS ECR instead of DockerHub
-- Add an Application Load Balancer
-- Add CloudWatch monitoring and alarms
-- Use AWS Secrets Manager or SSM Parameter Store for passwords
-- Add a CI/CD pipeline
-
----
-
-## Cleanup
-
-To avoid AWS costs after the demo:
-
+```bash
 cd terraform
 terraform destroy
+```
 
-Do not run terraform destroy before the final presentation or live demo.
+# 👩‍💻 Author
+
+**Sushmitha Ravi**
+
+This repository represents my learning journey from local development to cloud-native deployment using modern DevOps practices.
